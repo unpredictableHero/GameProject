@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bol Game Project</title>
+</head>
+<body>
+<input id="nameDescription" type="text" value="Name:" style="border: none" readonly>
+<input id="name" type="text" onkeyup="stoppedTyping()">
+<div>
+    <input id="start_button" type="submit" value="Start" onclick="start()" disabled/>
+</div>
+<form id="Form2">
+    <input id="0" type="text" disabled size="1" value="0" readonly/>
+    <input id="13" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="12" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="11" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="10" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="9" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="8" type="button" disabled value="6" onclick="send(this)"/>
+</form>
+<form id="Form1">
+    <input id="1" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="2" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="3" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="4" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="5" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="6" type="button" disabled value="6" onclick="send(this)"/>
+    <input id="7" type="text" disabled size="1" value="0" readonly/>
+</form>
+<div id="messages"></div>
+<script type="text/javascript">
+    var webSocket =
+      new WebSocket('ws://localhost:8080/game/websocket');
+
+    webSocket.onerror = function(event) {
+      onError(event)
+    };
+
+    webSocket.onopen = function(event) {
+      onOpen(event)
+    };
+
+    webSocket.onmessage = function(event) {
+      onMessage(event)
+    };
+
+    function onMessage(event) {
+        var parsed = JSON.parse(event.data);
+        update(parsed);
+        if(parsed.isOver && parsed.hasStarted) {
+            if(parsed.name == "") {
+                document.getElementById('messages').innerHTML = "It's a tie";
+            } else if(parsed.name == document.getElementById('name').value) {
+                document.getElementById('messages').innerHTML = "You won";
+            } else {
+                document.getElementById('messages').innerHTML = "You lost";
+            }
+        }
+
+    }
+
+    function update(parsed) {
+
+        var isDisabled = true;
+        if(parsed.name == document.getElementById('name').value && parsed.hasStarted) {
+            isDisabled = false;
+        }
+        for(var i=0; i<14; i++) {
+            document.getElementById(i).value = parsed.pits[i];
+            document.getElementById(i).disabled = isDisabled;
+        }
+    }
+
+    function onOpen(event) {
+      document.getElementById('messages').innerHTML
+        = 'Connection established' + event.currentTarget.url;
+
+    }
+
+    function onError(event) {
+      alert(event.data);
+    }
+
+    function send(obj) {
+      var jsonString = new Object();
+      jsonString.name = document.getElementById('name').value;
+      jsonString.id = obj.id;
+      jsonString.value = obj.value;
+      webSocket.send(JSON.stringify(jsonString));
+      return false;
+    }
+
+    function stoppedTyping(){
+        var n = document.getElementById('name').value;
+        if(n.length > 0) {
+            document.getElementById('start_button').disabled = false;
+        } else {
+            document.getElementById('start_button').disabled = true;
+        }
+    }
+
+    function start(){
+        var n = document.getElementById('name').value;
+        if (n.length < 1){
+            return
+        }
+        else{
+            document.getElementById('name').readOnly = true;
+
+            for(var i=1; i<=6; i++) {
+                document.getElementById(i).disabled = false;
+                document.getElementById(i+7).disabled = false;
+            }
+
+            var jsonString = new Object();
+            jsonString.name = document.getElementById('name').value;
+            jsonString.id = -1;
+            jsonString.value = -1;
+            webSocket.send(JSON.stringify(jsonString));
+            document.getElementById('start_button').disabled = true;
+        }
+    }
+</script>
+</body>
+</html>
